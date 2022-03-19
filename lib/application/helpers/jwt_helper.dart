@@ -23,13 +23,13 @@ class JwtHelper {
 
   static String refreshToken(String accessToken) {
     final claimSet = JwtClaim(
-        issuer: accessToken,
-        subject: 'refreshToken',
-        expiry: DateTime.now().add(Duration(days: 20)),
-        // notBefore: DateTime.now(),
-        issuedAt: DateTime.now(),
-        otherClaims: <String, dynamic>{},
-        maxAge: const Duration(days: 1));
+      issuer: accessToken,
+      subject: 'refreshToken',
+      expiry: DateTime.now().add(Duration(days: 20)),
+      // notBefore: DateTime.now(),
+      issuedAt: DateTime.now(),
+      otherClaims: <String, dynamic>{},
+    );
     return 'Bearer ${issueJwtHS256(claimSet, _jwtSecret)}';
   }
 }

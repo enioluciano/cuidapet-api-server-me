@@ -54,14 +54,15 @@ class UserService implements IUserService {
 
   @override
   Future<String> confirmLogin(UserConfirmInputModel inputModel) async {
+    final refreshToken = JwtHelper.refreshToken(inputModel.accessToken);
     final user = User(
         id: inputModel.userId,
-        refreshToken: JwtHelper.refreshToken(inputModel.accessToken),
+        refreshToken: refreshToken,
         iosToken: inputModel.iosDeviceToken,
         androidToken: inputModel.androidDeviceToken);
 
     await userRepository.updateUserDeviceTokenAndRefreshToken(user);
-    return user.refreshToken!;
+    return refreshToken;
   }
 
   @override
@@ -70,7 +71,7 @@ class UserService implements IUserService {
     _validateRefreshToken(model);
     final newAccessToken = JwtHelper.generateJWT(model.user, model.supplier);
     final newRefreshToken =
-        JwtHelper.refreshToken(newAccessToken.replaceAll('Bearer', ''));
+        JwtHelper.refreshToken(newAccessToken.replaceAll('Bearer ', ''));
     final user = User(id: model.user, refreshToken: model.refreshToken);
     await userRepository.updateRefreshToken(user);
     return RefreshTokenViewModel(
