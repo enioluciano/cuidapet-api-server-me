@@ -1,6 +1,7 @@
 import 'package:injectable/injectable.dart';
 import 'package:mysql1/mysql1.dart';
 import 'package:server/application/exceptions/user_not_found_exception.dart';
+import 'package:server/modules/user/view_models/platform.dart';
 
 import '../../../application/database/i_database_connection_database.dart';
 import '../../../application/exceptions/database_exception.dart';
@@ -128,6 +129,10 @@ value(?,?,?,?,?,?);
             imageAvatar: (dataMysql['img_avatar'] as Blob?)?.toString(),
             supplierId: dataMysql['supplier_id']);
       }
+    } on MySqlException catch (e, s) {
+      log.error('Erro ao realizar login por rede social',
+          error: e, stackTrace: s);
+      throw DatabaseException(message: e.message);
     } finally {
       await conn?.close();
     }
@@ -174,6 +179,84 @@ value(?,?,?,?,?,?);
           [user.refreshToken!, user.id!]);
     } on MySqlException catch (e, s) {
       log.error('Erro ao atualizar refresh token', error: e, stackTrace: s);
+      throw DatabaseException();
+    } finally {
+      await conn?.close();
+    }
+  }
+
+  @override
+  Future<User> findById(int id) async {
+    MySqlConnection? conn;
+    try {
+      conn = await connection.openConnection();
+      final result = await conn.query('''
+select id, email, tipo_cadastro,ios_token,android_token,
+refresh_token, img_avatar,fornecedor_id 
+from usuario
+where id= ?
+
+''', [id]);
+// é apenas [id] pois é o parametro que ele vai receber no método findById
+
+      if (result.isEmpty) {
+        log.error('Usuário não encontrado com o id[$id]');
+        throw UserNotFoundException(
+            message: 'Usuário não encontrado com o id[$id]');
+      } else {
+        final dataMysql = result.first;
+        return User(
+            id: dataMysql['id'] as int,
+            email: dataMysql['email'],
+            registerType: dataMysql['tipo_cadastro'],
+            iosToken: (dataMysql['ios_token'] as Blob?)?.toString(),
+            androidToken: (dataMysql['android_token'] as Blob?)?.toString(),
+            refreshToken: (dataMysql['refresh_token'] as Blob?)?.toString(),
+            imageAvatar: (dataMysql['img_avatar'] as Blob?)?.toString(),
+            supplierId: dataMysql['supplier_id']);
+      }
+    } on MySqlException catch (e, s) {
+      log.error('Erro ao buscar  usuário por id', error: e, stackTrace: s);
+      throw DatabaseException();
+    } finally {
+      await conn?.close();
+    }
+  }
+
+  @override
+  Future<void> updateUrlAvatar(int id, String urlAvatar) async {
+    MySqlConnection? conn;
+    try {
+      conn = await connection.openConnection();
+      final result = await conn.query('''
+update usuario set img_avatar =? where id=?
+
+''', [urlAvatar, id]);
+    } on MySqlException catch (e, s) {
+      log.error('Erro ao atualizar avatar', error: e, stackTrace: s);
+      throw DatabaseException();
+    } finally {
+      await conn?.close();
+    }
+  }
+
+  @override
+  Future<void> updateDeviceToken(
+      int id, String token, Platform platform) async {
+    MySqlConnection? conn;
+    try {
+      conn = await connection.openConnection();
+      var set = '';
+      if (platform == Platform.ios) {
+        set = 'ios_token = ?';
+      } else {
+        set = 'android_token = ?';
+      }
+
+      final query = 'update usuario set $set where id = ?';
+      await conn.query(query, [token, id]);
+    } on MySqlException catch (e, s) {
+      log.error('Erro ao atualizar device token', error: e, stackTrace: s);
       throw DatabaseException();
     } finally {
       await conn?.close();

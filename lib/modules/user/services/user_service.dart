@@ -5,8 +5,10 @@ import 'package:server/application/exceptions/user_not_found_exception.dart';
 import 'package:server/application/helpers/jwt_helper.dart';
 import 'package:server/application/logger/i_logger.dart';
 import 'package:server/modules/user/view_models/refresh_token_view_model.dart';
+import 'package:server/modules/user/view_models/update_url_avatar_view_model.dart';
 import 'package:server/modules/user/view_models/user_confirm_input_model.dart';
 import 'package:server/modules/user/view_models/user_refresh_token_input_model.dart';
+import 'package:server/modules/user/view_models/user_update_token_device_input_model.dart';
 
 import '../../../entities/user.dart';
 import '../data/i_user_repository.dart';
@@ -98,4 +100,21 @@ class UserService implements IUserService {
       throw ServiceException(message: 'Erro ao validar refresh token');
     }
   }
+
+  @override
+  Future<User> findById(int id) => userRepository.findById(id);
+
+  @override
+  Future<User> updateAvatar(UpdateUrlAvatarViewModel viewModel) async {
+    await userRepository.updateUrlAvatar(viewModel.userId, viewModel.urlAvatar);
+    return findById(viewModel.userId);
+  }
+
+  @override
+  Future<void> updateDeviceToken(UserUpdateTokenDeviceInputModel model) async =>
+      await userRepository.updateDeviceToken(
+        model.userId,
+        model.token,
+        model.plataform,
+      );
 }
